@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIMM Seeing</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230e1116'/><circle cx='11' cy='16' r='4' fill='%234ea1ff'/><circle cx='21' cy='16' r='4' fill='%234ea1ff'/></svg>">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>DIMM Seeing</h1>
+  <span id="status-pill" class="pill">Desconectado</span>
+  <span class="spacer"></span>
+  <label class="toggle"><input type="checkbox" id="night"> Modo noche (rojo)</label>
+</header>
+
+<main>
+  <aside>
+    <!-- 1. Cámara -->
+    <section>
+      <h2><span class="step">1</span> Cámara</h2>
+      <select id="cam-backend"></select>
+      <div id="webcam-row" class="row">
+        <select id="webcam-select"><option value="0">Cámara #0</option></select>
+        <button id="btn-webcams" class="secondary icon" title="Buscar cámaras">⟳</button>
+      </div>
+      <div id="zwo-row" class="row hidden">
+        <label class="inline">Índice <input id="cam-index" type="number" min="0" value="0" class="narrow"></label>
+      </div>
+      <div id="ascom-row" class="row hidden">
+        <input id="cam-progid" placeholder="ProgID ASCOM" readonly>
+        <button id="btn-ascom-choose" class="secondary">Elegir…</button>
+      </div>
+      <div class="row">
+        <button id="btn-cam-connect">Conectar</button>
+        <button id="btn-cam-disconnect" class="secondary">Desconectar</button>
+      </div>
+      <p id="cam-info" class="muted"></p>
+    </section>
+
+    <!-- 2. Estrella -->
+    <section>
+      <h2><span class="step">2</span> Estrella apuntada</h2>
+      <div class="row">
+        <select id="star-select"></select>
+        <button id="btn-stars" class="secondary icon" title="Actualizar alturas">⟳</button>
+      </div>
+      <button id="btn-star" class="full">Estoy apuntando a esta estrella</button>
+      <p id="star-hint" class="muted">Ordenadas por altura ahora. Mejor &gt; 45° y magnitud &lt; 2.</p>
+      <details>
+        <summary>Otra estrella / coordenadas a mano</summary>
+        <div class="row">
+          <input id="man-ra" placeholder="RA 05:14:32">
+          <input id="man-dec" placeholder="Dec -08:12:05">
+        </div>
+        <button id="btn-man" class="secondary">Usar estas coordenadas</button>
+      </details>
+      <details>
+        <summary>Plate solving (ASTAP)</summary>
+        <p class="muted">Con campo de pocos minutos de arco casi nunca funciona. Quite la máscara al usarlo.</p>
+        <button id="btn-solve" class="secondary">Resolver placa</button>
+      </details>
+    </section>
+
+    <!-- 3. Escala -->
+    <section>
+      <h2><span class="step">3</span> Escala de la imagen</h2>
+      <div class="scale-box">
+        <b id="scale-used">–</b> "/px <span id="scale-badge" class="badge">teórica</span>
+      </div>
+      <p class="muted">Teórica (focal + pixel): <span id="scale-phys">–</span> "/px</p>
+      <button id="btn-calib" class="full">Calibrar con la deriva (15 s)</button>
+      <button id="btn-calib-reset" class="secondary full">Usar escala teórica</button>
+      <p class="muted">Una vez por configuración: con la estrella elegida entrando al campo, pulse y
+        no toque el telescopio. La estrella cruza a velocidad conocida y así se mide la escala real.</p>
+    </section>
+
+    <!-- Ajustes -->
+    <section>
+      <h2>Ajustes</h2>
+      <form id="cfg-form">
+        <fieldset>
+          <legend>Máscara (medir la real)</legend>
+          <div class="grid">
+            <label title="Diámetro de cada agujero">D agujero (m)<input name="aperture_d_m" type="number" step="0.001"></label>
+            <label title="Distancia entre los centros de los agujeros">B centros (m)<input name="baseline_b_m" type="number" step="0.001"></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Captura</legend>
+          <div class="grid">
+            <label>Exposición (ms)<input name="exposure_ms" type="number" step="0.1"></label>
+            <label>Ganancia<input name="gain" type="number"></label>
+            <label>Frames por medición<input name="frames_per_measure" type="number"></label>
+            <label>Mínimo de frames<input name="min_valid_frames" type="number"></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Óptica</legend>
+          <div class="grid">
+            <label>Focal (mm)<input name="focal_length_mm" type="number" step="1"></label>
+            <label>Pixel (µm)<input name="pixel_size_um" type="number" step="0.01"></label>
+            <label>Binning<input name="binning" type="number" min="1" max="4"></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Sitio</legend>
+          <div class="grid">
+            <label>Latitud (°, N+)<input name="site_lat_deg" type="number" step="0.0001"></label>
+            <label>Longitud (°, E+)<input name="site_lon_deg" type="number" step="0.0001"></label>
+          </div>
+        </fieldset>
+        <details>
+          <summary>Avanzado</summary>
+          <div class="grid">
+            <label>Umbral detección (σ)<input name="detect_sigma" type="number" step="0.5"></label>
+            <label>Saturación (ADU)<input name="saturation_adu" type="number"></label>
+            <label>Ventana centroide (px)<input name="centroid_box" type="number"></label>
+            <label>Guardar FITS<input name="save_fits" type="checkbox"></label>
+            <label>Webcam ancho (0=auto)<input name="webcam_width" type="number"></label>
+            <label>Webcam alto (0=auto)<input name="webcam_height" type="number"></label>
+            <label class="wide">Ruta ASTAP<input name="astap_path"></label>
+            <label>Exp. plate solve (s)<input name="solve_exposure_s" type="number" step="0.1"></label>
+            <label>Seeing simulado (")<input name="sim_seeing_arcsec" type="number" step="0.1"></label>
+            <label>Simular deriva<input name="sim_drift" type="checkbox"></label>
+          </div>
+        </details>
+      </form>
+      <button id="btn-cfg-save" class="full">Guardar ajustes</button>
+    </section>
+
+    <!-- LX200 opcional -->
+    <section>
+      <details>
+        <summary class="h2">Telescopio LX200 (opcional, cable serial)</summary>
+        <div class="row">
+          <select id="serial-port"></select>
+          <button id="btn-ports" class="secondary icon" title="Buscar puertos">⟳</button>
+        </div>
+        <div class="row">
+          <button id="btn-tel-connect">Conectar</button>
+          <button id="btn-tel-disconnect" class="secondary">Desconectar</button>
+        </div>
+        <p class="muted">No es necesario. Si se conecta, solo lee posición, hora y sitio del GPS.</p>
+      </details>
+    </section>
+  </aside>
+
+  <div class="center">
+    <section class="viewer">
+      <div class="viewer-head">
+        <span id="frame-status" class="muted">Sin imagen</span>
+        <span class="spacer"></span>
+        <span id="fps" class="muted"></span>
+      </div>
+      <div class="canvas-wrap"><canvas id="view" width="640" height="480"></canvas></div>
+      <div class="row controls">
+        <button id="btn-measure-one">Medir una vez</button>
+        <button id="btn-measure-cont">Medición continua</button>
+        <button id="btn-measure-stop" class="danger">Detener</button>
+        <span class="spacer"></span>
+        <div class="progress"><div id="progress-bar"></div></div>
+        <span id="progress-txt" class="muted"></span>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="big">
+        <div class="label">Seeing</div>
+        <div id="seeing-now" class="value">–</div>
+        <div id="seeing-zen" class="muted">cenit: –</div>
+      </div>
+      <div class="kv">
+        <div><span>r₀</span><b id="r0">–</b></div>
+        <div><span>σ long / trans</span><b id="sigmas">–</b></div>
+        <div><span>Masa de aire</span><b id="airmass">–</b></div>
+        <div><span>Frames válidos</span><b id="nframes">–</b></div>
+      </div>
+      <div class="kv">
+        <div><span>Objeto</span><b id="coord-src">–</b></div>
+        <div><span>RA</span><b id="ra">–</b></div>
+        <div><span>Dec</span><b id="dec">–</b></div>
+        <div><span>Altura</span><b id="alt">–</b></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="viewer-head">
+        <h2>Seeing de la noche</h2>
+        <span class="spacer"></span>
+        <a href="/api/results.csv" class="button secondary">Descargar CSV</a>
+      </div>
+      <canvas id="chart" height="220"></canvas>
+      <p id="csv-path" class="muted"></p>
+    </section>
+
+    <section>
+      <h2>Mensajes</h2>
+      <div id="log"></div>
+    </section>
+  </div>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

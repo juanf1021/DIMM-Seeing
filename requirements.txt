@@ -1,0 +1,12 @@
+numpy>=1.26
+scipy>=1.11
+pillow>=10.0
+fastapi>=0.110
+uvicorn>=0.29
+pyserial>=3.5
+# Cámaras (opcionales según el hardware)
+opencv-python-headless>=4.9 ; platform_system != "Windows"
+opencv-python>=4.9 ; platform_system == "Windows"
+zwoasi>=0.2
+pywin32>=306 ; platform_system == "Windows"
+pygrabber>=0.2 ; platform_system == "Windows"

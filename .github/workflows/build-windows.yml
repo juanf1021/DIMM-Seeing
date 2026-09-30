@@ -1,0 +1,32 @@
+name: Build Windows exe
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller pytest httpx
+      - name: Tests
+        run: python -m pytest -q
+      - name: Compilar
+        run: >
+          pyinstaller --noconfirm --onefile --name DIMM-Seeing
+          --add-data "dimm_app\static;dimm_app\static"
+          --collect-submodules uvicorn
+          --hidden-import win32com.client --hidden-import pythoncom
+          run.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DIMM-Seeing-windows
+          path: dist/DIMM-Seeing.exe
